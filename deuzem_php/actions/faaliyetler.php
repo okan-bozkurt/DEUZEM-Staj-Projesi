@@ -28,6 +28,8 @@ switch ($metod) {
             getRecentActivities($baglanti);
         } elseif ($islem === 'stats') {
             getStats($baglanti);
+        } elseif ($islem === 'calendar') {
+            getCalendarEvents($baglanti);
         } else {
             getFaaliyetler($baglanti);
         }
@@ -443,5 +445,29 @@ function deleteFaaliyet($baglanti, $id) {
     } else {
         json_response(['success' => false, 'message' => 'Faaliyet silinirken hata oluştu.'], 500);
     }
+} //Takvim İçin Veri Hazırlama Fonksiyonu
+function getCalendarEvents($baglanti) {
+    $sql = "SELECT faaliyet_id as id, faaliyet_icerigi as title, baslangic_tarihi as start, bitis_tarihi as end FROM faaliyetler";
+    $sonuc = $baglanti->query($sql);
+    $etkinlikler = $sonuc->fetch_all(MYSQLI_ASSOC);
+    
+    $takvim_verisi = [];
+    $bugun = date('Y-m-d');
+    
+    foreach($etkinlikler as $row) {
+        if ($row['end'] < $bugun) {
+            $row['color'] = '#e74c3c'; // Geçmiş etkinlikler (Kırmızı)
+        } else {
+            $row['color'] = '#2ecc71'; // Yaklaşan etkinlikler (Yeşil)
+        }
+        if (!empty($row['end'])) {
+            $row['end'] = date('Y-m-d', strtotime($row['end'] . ' +1 day'));
+        }
+        $takvim_verisi[] = $row;
+    }
+    
+    echo json_encode($takvim_verisi);
+    exit;
 }
+
 ?>
