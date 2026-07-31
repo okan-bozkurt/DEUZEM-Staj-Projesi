@@ -1,0 +1,15 @@
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Local env / secrets (proje hardcoded config kullanir, ama olur da eklenirse)
+.env
+.env.local
+
+# Loglar
+*.log
