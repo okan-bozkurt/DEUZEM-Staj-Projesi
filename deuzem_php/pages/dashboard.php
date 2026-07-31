@@ -199,9 +199,9 @@ require_once __DIR__ . '/../includes/navbar.php';
             <!-- widgetlar -->
             <div class="dashboard-right">
                 <div class="card widget">
-                    <h4>Yaklaşan Etkinlikler</h4>
-                    <div id="upcomingList" class="widget-list"></div>
-                    <div id="upcomingPagination" class="widget-pagination"></div>
+                    <h4>Etkinlik Takvimi</h4>
+                    <div id="calendar" style="margin-top: 10px; font-size: 0.85em;"></div>
+        
                 </div>
 
                 <div class="card widget">
@@ -313,6 +313,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         yaklasanlariYukle();
         devamEdenleriYukle();
         sonTamamlananlariYukle();
+        takvimiBaslat();
 
         document.getElementById('activityForm').addEventListener('submit', formGonder);
         document.getElementById('filterStart').addEventListener('change', () => { mevcutSayfa = 1; faaliyetleriYukle(); });
@@ -654,12 +655,40 @@ require_once __DIR__ . '/../includes/navbar.php';
         let url = `${BASE_URL}/actions/export_${tip}.php?`;
         url += `baslangic_tarihi=${baslangic}&bitis_tarihi=${bitis}&search=${encodeURIComponent(arama)}&writer=${raporlayan}&columns=${sutunlar}`;
 
-        if (tip === 'excel') {
+       if (tip === 'excel') {
             window.location.href = url;
         } else {
             window.open(url, '_blank');
         }
+    } // raporOlustur fonksiyonunun kapanis parantezi
+
+    // Takvimi Başlatma Fonksiyonu
+    function takvimiBaslat() {
+        const calendarEl = document.getElementById('calendar');
+        if (calendarEl) {
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'tr',
+                headerToolbar: {
+                    left: 'prev,next',
+                    center: 'title',
+                    right: 'today'
+                },
+                buttonText: { today: 'Bugün' },
+                height: 400,
+                events: `${BASE_URL}/actions/faaliyetler.php?action=calendar`,
+                eventClick: function(info) {
+                    if(info.event.id) {
+                        faaliyetDuzenle(info.event.id); // Takvimdeki etkinliğe tıklayınca formu doldurur
+                    }
+                }
+            });
+            calendar.render();
+        }
     }
 </script>
+
+<!-- FullCalendar Kütüphanesi -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
