@@ -27,7 +27,18 @@ if (!isset($page_title)) {
     <?php if (isset($page_css)): ?>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/<?php echo $page_css; ?>">
     <?php endif; ?>
+
+    <!-- karanlik mod: flicker olmadan aninda uygula -->
+    <script>
+        (function() {
+            try {
+                if (localStorage.getItem('darkMode') === 'true') {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch(e) {}
+        })();
+    </script>
 </head>
-<body>
+<body id="pageBody">
 <!-- toast bildirim container -->
 <div id="toastContainer" class="toast-container" aria-live="polite"></div>

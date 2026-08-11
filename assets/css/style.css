@@ -1330,3 +1330,302 @@ button:focus-visible {
     justify-content: flex-end;
     margin-top: 8px;
 }
+
+/* ============================================================
+   KARANLIK MOD (DARK MODE)
+   html etiketine .dark sinifi eklendiginde aktif olur
+   ============================================================ */
+
+/* Dark mode CSS degiskenleri */
+html.dark {
+    --bg-primary: #0f1117;
+    --bg-secondary: #1a1d27;
+    --bg-hover: #252836;
+    --color-primary: #5b8def;
+    --color-primary-dark: #4a7de0;
+    --color-primary-light: #7aa5f5;
+    --color-secondary: #7b9ec4;
+    --color-text: #e2e8f0;
+    --color-text-light: #94a3b8;
+    --color-border: #2d3348;
+    --color-success: #48bb78;
+    --color-error: #f56565;
+    --color-warning: #ed8936;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+/* Genel arka plan ve metin renkleri */
+html.dark body {
+    background: var(--bg-primary);
+    color: var(--color-text);
+}
+
+/* Navbar */
+html.dark .navbar {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--color-border);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+
+html.dark .navbar-brand {
+    color: var(--color-text);
+}
+
+html.dark .user-name {
+    color: var(--color-text);
+}
+
+html.dark .hamburger-line {
+    background: var(--color-text);
+}
+
+/* Mobil dropdown navbar */
+html.dark .navbar-user {
+    background: var(--bg-secondary);
+    border-color: var(--color-border);
+}
+
+/* Kartlar */
+html.dark .card,
+html.dark .stat-card,
+html.dark .widget {
+    background: var(--bg-secondary);
+    border-color: var(--color-border);
+}
+
+/* Tablolar */
+html.dark table,
+html.dark .data-table {
+    color: var(--color-text);
+}
+
+html.dark thead,
+html.dark .data-table thead {
+    background: var(--bg-primary);
+    border-bottom-color: var(--color-border);
+}
+
+html.dark td,
+html.dark th,
+html.dark .data-table th,
+html.dark .data-table td {
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+html.dark tbody tr:hover,
+html.dark .data-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+/* Form elemanları */
+html.dark .form-input,
+html.dark .form-select,
+html.dark .form-textarea {
+    background: var(--bg-primary);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+html.dark .form-input:focus,
+html.dark .form-select:focus,
+html.dark .form-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.2);
+}
+
+html.dark .form-input::placeholder,
+html.dark .form-textarea::placeholder {
+    color: var(--color-text-light);
+}
+
+/* Butonlar */
+html.dark .btn-outline {
+    color: var(--color-primary-light);
+    border-color: var(--color-primary-light);
+}
+
+html.dark .btn-outline:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+/* Widget listesi */
+html.dark .widget-item {
+    background: var(--bg-primary);
+    color: var(--color-text);
+}
+
+html.dark .widget-item:hover {
+    background: var(--bg-hover);
+}
+
+/* Footer */
+html.dark .site-footer {
+    background: var(--bg-secondary);
+    border-top-color: var(--color-border);
+    color: var(--color-text-light);
+}
+
+/* Alert kutuları */
+html.dark .alert-error {
+    background: rgba(245, 101, 101, 0.15);
+    color: #fc8181;
+    border-color: rgba(245, 101, 101, 0.3);
+}
+
+html.dark .alert-success {
+    background: rgba(72, 187, 120, 0.15);
+    color: #68d391;
+    border-color: rgba(72, 187, 120, 0.3);
+}
+
+/* Badge'ler */
+html.dark .badge-success {
+    background: rgba(72, 187, 120, 0.2);
+    color: #68d391;
+}
+
+html.dark .badge-secondary {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--color-text-light);
+}
+
+html.dark .badge-danger {
+    background: rgba(245, 101, 101, 0.2);
+    color: #fc8181;
+}
+
+/* Filtre alanı */
+html.dark .filter-group label {
+    color: var(--color-text-light);
+}
+
+/* Kolon seçim alanı */
+html.dark .column-select-area {
+    background: var(--bg-primary);
+    border-color: var(--color-border);
+}
+
+html.dark .column-select-area h5 {
+    color: var(--color-text);
+}
+
+/* Form bölüm başlıkları */
+html.dark .form-section {
+    border-bottom-color: var(--color-border);
+}
+
+html.dark .form-header {
+    border-bottom-color: var(--color-border);
+}
+
+/* Sayfalama */
+html.dark .pagination-ellipsis {
+    color: var(--color-text-light);
+}
+
+/* Takvim */
+html.dark .calendar-container {
+    background: var(--bg-secondary);
+    border-color: var(--color-border);
+}
+
+html.dark .calendar-header {
+    border-bottom-color: var(--color-border);
+}
+
+html.dark .calendar-weekdays {
+    background: var(--bg-primary);
+    border-color: var(--color-border);
+    color: var(--color-text-light);
+}
+
+html.dark .calendar-days-grid {
+    background: var(--color-border);
+    border-color: var(--color-border);
+}
+
+html.dark .calendar-day-cell {
+    background: #1e2235;
+}
+
+html.dark .calendar-day-cell:hover {
+    background: #252a40;
+}
+
+html.dark .calendar-day-cell.other-month {
+    background: #161928;
+}
+
+html.dark .calendar-day-cell.today {
+    background: #1e2a42;
+}
+
+html.dark .calendar-day-num {
+    color: var(--color-text);
+}
+
+html.dark .calendar-day-cell.selected-day {
+    background: #1e2f55 !important;
+    outline-color: var(--color-primary);
+}
+
+html.dark .calendar-day-details {
+    background: var(--bg-primary);
+    border-color: var(--color-border);
+}
+
+html.dark .calendar-details-header {
+    border-bottom-color: var(--color-border);
+}
+
+html.dark .calendar-detail-item {
+    background: var(--bg-secondary);
+    border-color: var(--color-border);
+}
+
+html.dark .calendar-detail-title {
+    color: var(--color-text);
+}
+
+html.dark .calendar-detail-meta {
+    color: var(--color-text-light);
+}
+
+/* Takvim etkinlik pilleri */
+html.dark .event-type-upcoming {
+    background: rgba(49, 130, 206, 0.2);
+    color: #90cdf4;
+    border-left-color: #3182ce;
+}
+
+html.dark .event-type-ongoing {
+    background: rgba(56, 161, 105, 0.2);
+    color: #9ae6b4;
+    border-left-color: #38a169;
+}
+
+html.dark .event-type-recent {
+    background: rgba(113, 128, 150, 0.2);
+    color: #cbd5e0;
+    border-left-color: #718096;
+}
+
+/* Rapor bölümü */
+html.dark .report-section {
+    border-top-color: var(--color-border);
+}
+
+/* Dark mode toggle butonu — diğer outline butonlarla aynı boyut */
+.dark-mode-toggle {
+    transition: all 0.25s ease;
+}
+
+.dark-mode-toggle svg {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+}

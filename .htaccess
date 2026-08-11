@@ -1,0 +1,10 @@
+RewriteEngine On
+RewriteBase /deuzem/
+
+# Eğer istenen URL gerçek bir dosyaya işaret ediyorsa (örn: resimler, css dosyaları) o dosyayı aç
+RewriteCond %{REQUEST_FILENAME} !-f
+# Eğer istenen URL gerçek bir klasöre işaret ediyorsa, o klasörü aç
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Geri kalan tüm geçersiz veya sanal URL isteklerini ana dizindeki index.php dosyasına yönlendir
+RewriteRule ^(.*)$ index.php [QSA,L]

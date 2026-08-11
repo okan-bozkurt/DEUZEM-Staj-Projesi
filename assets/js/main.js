@@ -113,4 +113,43 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // --------------------------------------------------------
+    // KARANLIK MOD (DARK MODE) TOGGLE
+    // --------------------------------------------------------
+    const darkToggleBtn = document.getElementById('darkModeToggle');
+    const iconMoon = document.getElementById('iconMoon');
+    const iconSun  = document.getElementById('iconSun');
+
+    // Mevcut durumu localStorage'dan oku ve ikonu ayarla
+    function darkModeIkonGuncelle() {
+        const isDark = document.documentElement.classList.contains('dark');
+        if (iconMoon) iconMoon.style.display = isDark ? 'none' : 'inline';
+        if (iconSun)  iconSun.style.display  = isDark ? 'inline' : 'none';
+        if (darkToggleBtn) {
+            darkToggleBtn.setAttribute(
+                'aria-label',
+                isDark ? 'Aydınlık moda geç' : 'Karanlık moda geç'
+            );
+            darkToggleBtn.setAttribute(
+                'title',
+                isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'
+            );
+        }
+    }
+
+    // Sayfa yüklendiğinde ikon durumunu ayarla
+    darkModeIkonGuncelle();
+
+    // Toggle butonuna tıklanınca
+    if (darkToggleBtn) {
+        darkToggleBtn.addEventListener('click', function () {
+            const isDark = document.documentElement.classList.toggle('dark');
+            try {
+                localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+            } catch (e) {}
+            darkModeIkonGuncelle();
+        });
+    }
 });
+
