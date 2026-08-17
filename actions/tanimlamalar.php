@@ -1,5 +1,5 @@
 <?php
-// tanim tablolari yonetimi (birimler, diller, kapsamlar, faydalar) — sadece admin
+// tanim tablolari yonetimi (birimler, diller, kapsamlar, faydalar, ska) — sadece admin
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -11,15 +11,16 @@ require_login();
 require_admin();
 
 $baglanti = get_db_connection();
-$metod = $_SERVER['REQUEST_METHOD'];
-$tur = $_GET['tur'] ?? '';
+$metod    = $_SERVER['REQUEST_METHOD'];
+$tur      = $_GET['tur'] ?? '';
 
 // izin verilen tablolar ve alan bilgileri
 $tablolar = [
-    'birimler'           => ['tablo' => 'birimler',          'id' => 'birim_id',   'ad' => 'birim_adi',   'kod' => 'birim_kodu',   'kod_zorunlu' => true],
-    'diller'             => ['tablo' => 'diller',             'id' => 'dil_id',     'ad' => 'dil_adi',     'kod' => 'dil_kodu',     'kod_zorunlu' => true],
-    'kapsamlar'          => ['tablo' => 'kapsamlar',          'id' => 'kapsam_id',  'ad' => 'kapsam_adi',  'kod' => null,           'kod_zorunlu' => false],
-    'toplumsal_faydalar' => ['tablo' => 'toplumsal_faydalar', 'id' => 'fayda_id',   'ad' => 'fayda_adi',   'kod' => null,           'kod_zorunlu' => false],
+    'birimler'           => ['tablo' => 'birimler',          'id' => 'birim_id',    'ad' => 'birim_adi',    'kod' => 'birim_kodu', 'kod_zorunlu' => true],
+    'diller'             => ['tablo' => 'diller',             'id' => 'dil_id',      'ad' => 'dil_adi',      'kod' => 'dil_kodu',   'kod_zorunlu' => true],
+    'kapsamlar'          => ['tablo' => 'kapsamlar',          'id' => 'kapsam_id',   'ad' => 'kapsam_adi',   'kod' => null,         'kod_zorunlu' => false],
+    'toplumsal_faydalar' => ['tablo' => 'toplumsal_faydalar', 'id' => 'fayda_id',    'ad' => 'fayda_adi',    'kod' => null,         'kod_zorunlu' => false],
+    'ska'                => ['tablo' => 'ska',                'id' => 'ska_id',      'ad' => 'ska_aciklama', 'kod' => null,         'kod_zorunlu' => false],
 ];
 
 if (!array_key_exists($tur, $tablolar)) {
@@ -27,6 +28,7 @@ if (!array_key_exists($tur, $tablolar)) {
 }
 
 $bilgi = $tablolar[$tur];
+ensure_schema_ready($baglanti);
 
 switch ($metod) {
     case 'GET':
@@ -34,30 +36,42 @@ switch ($metod) {
         break;
     case 'POST':
         verify_csrf_or_die();
-        $veri = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $veri  = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $islem = $_GET['action'] ?? 'create';
-        if ($islem === 'delete' && isset($veri['id'])) {
-            sil($baglanti, $bilgi, (int)$veri['id']);
-        } else {
-            ekle($baglanti, $bilgi, $veri);
+        switch ($islem) {
+            case 'delete':
+                if (isset($veri['id'])) pasife_al($baglanti, $bilgi, (int)$veri['id']);
+                break;
+            case 'restore':
+                if (isset($veri['id'])) aktife_al($baglanti, $bilgi, (int)$veri['id']);
+                break;
+            default:
+                ekle($baglanti, $bilgi, $veri);
         }
         break;
     default:
         json_response(['success' => false, 'message' => 'Geçersiz istek.'], 400);
 }
 
+// Listele — tum=1 ise aktif+pasif, degilse sadece aktif
 function listele($baglanti, $bilgi) {
-    $sonuc = $baglanti->query("SELECT * FROM `{$bilgi['tablo']}` ORDER BY `{$bilgi['ad']}`");
-    json_response(['success' => true, 'data' => $sonuc->fetch_all(MYSQLI_ASSOC)]);
+    $tum   = isset($_GET['tum']) && $_GET['tum'] === '1';
+    $where = $tum ? '' : ' WHERE `aktif_mi` = 1';
+    $sonuc = $baglanti->query("SELECT * FROM `{$bilgi['tablo']}`{$where} ORDER BY `aktif_mi` DESC, `{$bilgi['ad']}` ASC");
+    if (!$sonuc) {
+        $sonuc = $baglanti->query("SELECT * FROM `{$bilgi['tablo']}` ORDER BY `aktif_mi` DESC, `{$bilgi['ad']}` ASC");
+    }
+    json_response(['success' => true, 'data' => $sonuc ? $sonuc->fetch_all(MYSQLI_ASSOC) : []]);
 }
 
+// Yeni kayit ekle
 function ekle($baglanti, $bilgi, $veri) {
     $ad = trim($veri[$bilgi['ad']] ?? '');
     if (empty($ad)) {
         json_response(['success' => false, 'message' => 'Ad alanı zorunludur.'], 400);
     }
-    if (!validate_length($ad, 1, 100)) {
-        json_response(['success' => false, 'message' => 'Ad en fazla 100 karakter olabilir.'], 400);
+    if (!validate_length($ad, 1, 255)) {
+        json_response(['success' => false, 'message' => 'Ad en fazla 255 karakter olabilir.'], 400);
     }
 
     if ($bilgi['kod_zorunlu']) {
@@ -76,42 +90,30 @@ function ekle($baglanti, $bilgi, $veri) {
     }
 
     if ($sorgu->execute()) {
-        json_response(['success' => true, 'message' => 'Kayıt başarıyla eklendi.', 'data' => ['id' => $baglanti->insert_id]], 201);
-    } else {
-        json_response(['success' => false, 'message' => 'Kayıt eklenirken hata oluştu.'], 500);
+        json_response(['success' => true, 'message' => 'Kayıt eklendi.', 'data' => ['id' => $baglanti->insert_id]], 201);
     }
+    json_response(['success' => false, 'message' => 'Kayıt eklenirken hata oluştu.'], 500);
 }
 
-function sil($baglanti, $bilgi, $id) {
-    // bu kayda bagli faaliyet var mi kontrol et
-    $fk_alanlar = [
-        'birimler'           => 'birim_id',
-        'diller'             => 'dil_id',
-        'kapsamlar'          => 'kapsam_id',
-        'toplumsal_faydalar' => 'fayda_id',
-    ];
-    $fk = $fk_alanlar[$bilgi['tablo']] ?? null;
-    if ($fk) {
-        $kontrol = $baglanti->prepare("SELECT COUNT(*) as sayi FROM faaliyetler WHERE `$fk` = ?");
-        $kontrol->bind_param("i", $id);
-        $kontrol->execute();
-        $sayi = $kontrol->get_result()->fetch_assoc()['sayi'];
-        if ($sayi > 0) {
-            json_response(['success' => false, 'message' => "Bu kayıt {$sayi} faaliyette kullanıldığı için silinemez."], 409);
-        }
-    }
-
-    $sorgu = $baglanti->prepare("DELETE FROM `{$bilgi['tablo']}` WHERE `{$bilgi['id']}` = ?");
+// Soft-delete: aktif_mi = 0
+function pasife_al($baglanti, $bilgi, $id) {
+    $sorgu = $baglanti->prepare("UPDATE `{$bilgi['tablo']}` SET `aktif_mi` = 0 WHERE `{$bilgi['id']}` = ?");
     $sorgu->bind_param("i", $id);
-
-    if ($sorgu->execute()) {
-        if ($sorgu->affected_rows > 0) {
-            json_response(['success' => true, 'message' => 'Kayıt silindi.']);
-        } else {
-            json_response(['success' => false, 'message' => 'Kayıt bulunamadı.'], 404);
-        }
-    } else {
-        json_response(['success' => false, 'message' => 'Kayıt silinirken hata oluştu.'], 500);
+    $sorgu->execute();
+    if ($sorgu->affected_rows > 0) {
+        json_response(['success' => true, 'message' => 'Kayıt silindi.']);
     }
+    json_response(['success' => false, 'message' => 'Kayıt bulunamadı.'], 404);
+}
+
+// Geri yükle: aktif_mi = 1
+function aktife_al($baglanti, $bilgi, $id) {
+    $sorgu = $baglanti->prepare("UPDATE `{$bilgi['tablo']}` SET `aktif_mi` = 1 WHERE `{$bilgi['id']}` = ?");
+    $sorgu->bind_param("i", $id);
+    $sorgu->execute();
+    if ($sorgu->affected_rows > 0) {
+        json_response(['success' => true, 'message' => 'Kayıt geri yüklendi.']);
+    }
+    json_response(['success' => false, 'message' => 'Kayıt bulunamadı.'], 404);
 }
 ?>

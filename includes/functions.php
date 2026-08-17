@@ -131,4 +131,50 @@ function validate_password($sifre) {
     }
     return ['valid' => true, 'message' => ''];
 }
+
+// Veritabanı şema otomatik tamamlama (aktif_mi sütunları ve ek kategori tabloları)
+function ensure_schema_ready($baglanti) {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+
+    // 1. Sabit kategorilere aktif_mi sütunu ekle (yoksa)
+    $tablolar = ['birimler', 'diller', 'kapsamlar', 'toplumsal_faydalar', 'ska'];
+    foreach ($tablolar as $t) {
+        $res = @$baglanti->query("SHOW COLUMNS FROM `{$t}` LIKE 'aktif_mi'");
+        if ($res && $res->num_rows === 0) {
+            @$baglanti->query("ALTER TABLE `{$t}` ADD COLUMN `aktif_mi` TINYINT(1) NOT NULL DEFAULT 1");
+        }
+    }
+
+    // 2. ek_kategori_tipleri tablosunu oluştur (yoksa)
+    @$baglanti->query("CREATE TABLE IF NOT EXISTS `ek_kategori_tipleri` (
+        `tip_id` INT(11) NOT NULL AUTO_INCREMENT,
+        `tip_adi` VARCHAR(100) NOT NULL,
+        `aktif_mi` TINYINT(1) NOT NULL DEFAULT 1,
+        `olusturma_tarihi` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP(),
+        PRIMARY KEY (`tip_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_turkish_ci");
+
+    // 3. ek_kategori_degerleri tablosunu oluştur (yoksa)
+    @$baglanti->query("CREATE TABLE IF NOT EXISTS `ek_kategori_degerleri` (
+        `deger_id` INT(11) NOT NULL AUTO_INCREMENT,
+        `tip_id` INT(11) NOT NULL,
+        `deger_adi` VARCHAR(255) NOT NULL,
+        `aktif_mi` TINYINT(1) NOT NULL DEFAULT 1,
+        PRIMARY KEY (`deger_id`),
+        KEY `idx_tip_id` (`tip_id`),
+        CONSTRAINT `fk_ekd_tip` FOREIGN KEY (`tip_id`) REFERENCES `ek_kategori_tipleri` (`tip_id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_turkish_ci");
+
+    // 4. faaliyet_ek_kategoriler tablosunu oluştur (yoksa)
+    @$baglanti->query("CREATE TABLE IF NOT EXISTS `faaliyet_ek_kategoriler` (
+        `faaliyet_id` INT(11) NOT NULL,
+        `deger_id` INT(11) NOT NULL,
+        PRIMARY KEY (`faaliyet_id`, `deger_id`),
+        CONSTRAINT `fk_fek_faaliyet` FOREIGN KEY (`faaliyet_id`) REFERENCES `faaliyetler` (`faaliyet_id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_fek_deger` FOREIGN KEY (`deger_id`) REFERENCES `ek_kategori_degerleri` (`deger_id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_turkish_ci");
+}
 ?>
+

@@ -8,17 +8,35 @@ require_once __DIR__ . '/../includes/functions.php';
 require_login();
 
 $baglanti = get_db_connection();
+ensure_schema_ready($baglanti);
 $kullanici = get_logged_user();
 
-// dropdown verilerini al
-$kapsamlar = $baglanti->query("SELECT kapsam_id, kapsam_adi FROM kapsamlar ORDER BY kapsam_adi")->fetch_all(MYSQLI_ASSOC);
-$diller = $baglanti->query("SELECT dil_id, dil_adi FROM diller ORDER BY dil_adi")->fetch_all(MYSQLI_ASSOC);
-$birimler = $baglanti->query("SELECT birim_id, birim_adi FROM birimler ORDER BY birim_adi")->fetch_all(MYSQLI_ASSOC);
-$faydalar = $baglanti->query("SELECT fayda_id, fayda_adi FROM toplumsal_faydalar ORDER BY fayda_adi")->fetch_all(MYSQLI_ASSOC);
-$skaList = $baglanti->query("SELECT ska_id, ska_aciklama FROM ska ORDER BY ska_aciklama")->fetch_all(MYSQLI_ASSOC);
+// dropdown verilerini al — sadece aktif kayitlar (DB aktif_mi = 1)
+$kapsamlar = $baglanti->query("SELECT kapsam_id, kapsam_adi FROM kapsamlar WHERE aktif_mi = 1 ORDER BY kapsam_adi")->fetch_all(MYSQLI_ASSOC);
+$diller    = $baglanti->query("SELECT dil_id, dil_adi FROM diller WHERE aktif_mi = 1 ORDER BY dil_adi")->fetch_all(MYSQLI_ASSOC);
+$birimler  = $baglanti->query("SELECT birim_id, birim_adi FROM birimler WHERE aktif_mi = 1 ORDER BY birim_adi")->fetch_all(MYSQLI_ASSOC);
+$faydalar  = $baglanti->query("SELECT fayda_id, fayda_adi FROM toplumsal_faydalar WHERE aktif_mi = 1 ORDER BY fayda_adi")->fetch_all(MYSQLI_ASSOC);
+$skaList   = $baglanti->query("SELECT ska_id, ska_aciklama FROM ska WHERE aktif_mi = 1 ORDER BY ska_aciklama")->fetch_all(MYSQLI_ASSOC);
+
+// Dinamik ek kategori tipleri ve aktif degerleri
+$ek_tip_res  = @$baglanti->query("SELECT tip_id, tip_adi FROM ek_kategori_tipleri WHERE aktif_mi = 1 ORDER BY tip_id");
+$ek_tipler   = $ek_tip_res ? $ek_tip_res->fetch_all(MYSQLI_ASSOC) : [];
+
+$ek_deg_res  = @$baglanti->query("
+    SELECT d.deger_id, d.tip_id, d.deger_adi
+    FROM ek_kategori_degerleri d
+    INNER JOIN ek_kategori_tipleri t ON d.tip_id = t.tip_id
+    WHERE d.aktif_mi = 1 AND t.aktif_mi = 1
+    ORDER BY d.deger_adi
+");
+$ek_degerler_ham = $ek_deg_res ? $ek_deg_res->fetch_all(MYSQLI_ASSOC) : [];
+$ek_degerler = [];
+foreach ($ek_degerler_ham as $d) {
+    $ek_degerler[(int)$d['tip_id']][] = $d;
+}
 
 // Duzenleme durumunda kayit bilgisini cek
-$duzenlenecek_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$duzenlenecek_id     = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $duzenlenen_faaliyet = null;
 
 if ($duzenlenecek_id) {
@@ -26,6 +44,24 @@ if ($duzenlenecek_id) {
     $stmt->bind_param("i", $duzenlenecek_id);
     $stmt->execute();
     $duzenlenen_faaliyet = $stmt->get_result()->fetch_assoc();
+}
+
+// Duzenleme modunda secili ek kategori degerleri
+$secili_ek_kat = [];
+if ($duzenlenecek_id && !empty($ek_tipler)) {
+    $ek_s = @$baglanti->prepare("
+        SELECT d.tip_id, fek.deger_id
+        FROM faaliyet_ek_kategoriler fek
+        INNER JOIN ek_kategori_degerleri d ON fek.deger_id = d.deger_id
+        WHERE fek.faaliyet_id = ?
+    ");
+    if ($ek_s) {
+        $ek_s->bind_param("i", $duzenlenecek_id);
+        $ek_s->execute();
+        foreach ($ek_s->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+            $secili_ek_kat[(int)$row['tip_id']] = (int)$row['deger_id'];
+        }
+    }
 }
 
 $varsayilan_tarih = isset($_GET['baslangic_tarihi']) ? htmlspecialchars($_GET['baslangic_tarihi']) : (isset($_GET['tarih']) ? htmlspecialchars($_GET['tarih']) : '');
@@ -183,6 +219,26 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <input type="number" id="katilimci_sayisi" name="katilimci_sayisi"
                                 class="form-input" value="<?php echo htmlspecialchars($duzenlenen_faaliyet['katilimci_sayisi'] ?? '0'); ?>" min="0">
                         </div>
+
+                        <?php foreach ($ek_tipler as $tip): ?>
+                        <div class="form-group">
+                            <label for="ek_kat_<?php echo $tip['tip_id']; ?>" class="form-label">
+                                <?php echo htmlspecialchars($tip['tip_adi']); ?>
+                            </label>
+                            <select id="ek_kat_<?php echo $tip['tip_id']; ?>"
+                                    name="ek_kat_<?php echo $tip['tip_id']; ?>"
+                                    class="form-select">
+                                <option value="">Seçiniz...</option>
+                                <?php foreach ($ek_degerler[(int)$tip['tip_id']] ?? [] as $d): ?>
+                                    <option value="<?php echo $d['deger_id']; ?>"
+                                        <?php echo (isset($secili_ek_kat[(int)$tip['tip_id']]) && $secili_ek_kat[(int)$tip['tip_id']] == $d['deger_id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($d['deger_adi']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php endforeach; ?>
+
                     </div>
                 </div>
 

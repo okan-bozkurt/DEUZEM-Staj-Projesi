@@ -291,7 +291,9 @@ function createFaaliyet($baglanti, $veri) {
     );
     
     if ($sorgu->execute()) {
-        json_response(['success' => true, 'message' => 'Faaliyet başarıyla oluşturuldu.', 'data' => ['faaliyet_id' => $baglanti->insert_id]], 201);
+        $yeni_id = $baglanti->insert_id;
+        kaydet_ek_kategoriler($baglanti, $yeni_id, $veri);
+        json_response(['success' => true, 'message' => 'Faaliyet başarıyla oluşturuldu.', 'data' => ['faaliyet_id' => $yeni_id]], 201);
     } else {
         json_response(['success' => false, 'message' => 'Faaliyet oluşturulurken hata oluştu.'], 500);
     }
@@ -381,9 +383,33 @@ function updateFaaliyet($baglanti, $veri) {
     );
     
     if ($sorgu->execute()) {
+        kaydet_ek_kategoriler($baglanti, $id, $veri);
         json_response(['success' => true, 'message' => 'Faaliyet başarıyla güncellendi.']);
     } else {
         json_response(['success' => false, 'message' => 'Faaliyet güncellenirken hata oluştu.'], 500);
+    }
+}
+
+// Ek kategori secimlerini pivot tabloya kaydet
+// Form alanları: ek_kat_TIP_ID => deger_id
+function kaydet_ek_kategoriler($baglanti, $faaliyet_id, $veri) {
+    // Once mevcut secimler temizle
+    $temizle = @$baglanti->prepare("DELETE FROM faaliyet_ek_kategoriler WHERE faaliyet_id = ?");
+    if (!$temizle) return; // Tablo yoksa sessizce devam et (migration calistirilmadiysa)
+    $temizle->bind_param("i", $faaliyet_id);
+    $temizle->execute();
+
+    // Yeni secimler ekle
+    $ekle = $baglanti->prepare("INSERT IGNORE INTO faaliyet_ek_kategoriler (faaliyet_id, deger_id) VALUES (?, ?)");
+    if (!$ekle) return;
+    foreach ($veri as $anahtar => $deger) {
+        if (substr($anahtar, 0, 7) === 'ek_kat_' && !empty($deger)) {
+            $deger_id = (int)$deger;
+            if ($deger_id > 0) {
+                $ekle->bind_param("ii", $faaliyet_id, $deger_id);
+                $ekle->execute();
+            }
+        }
     }
 }
 
